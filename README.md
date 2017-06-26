@@ -122,3 +122,125 @@ thetabledownthere === theta bled own there
 The algorithm above works well for Chinese, where words are composed of characters, and the average word length is ~2.4 characters. Characters are generally 1 syllable and 1 morpheme.
 
 ## 2-4 Word Normalization and Stemming
+
+### Normalization
+- Normalizing terms means different things for different applications. In information retrieval, we want the indexed text & query terms to have the same form. E.g. we want to match U.S.A. and USA.
+- Implicitly define equivalence classes of terms, e.g. deleting the periods in a term. Alternatively, we could use *asymmetric expansion*, generating other search terms based on the one passed in.
+  - User enters: **window** so we search for: **window, windows**
+  - User enters: **windows** so we search for: **Windows, windows, window**
+  - User enters: **Windows** so we search for: **Windows**
+- Asymmetric expansion is potentially more powerful than equivlence class approach, but less efficient.
+- In applications like IR: reduce all letters to lowercase, since users tend to use lower case. A possible exception: encountering upper case in mid-sentence, e.g. **sail**, **sail** vs **sail**, **sail** vs. **sail**.
+- For sentiment analysis, MT, Information Extraction, case IS helpful (**US** versus **us** is important)
+
+### Lemmatization
+- Reduce inflections or variant forms to base form
+  - am, are, is --> be
+  - car, cars, car's, cars' --> car
+  - *the boy's cars are different colors --> the boy car be different color*
+- **Lemmatization**: have to find correct dictionary headword form
+- Machine Translation
+  - Spanish **quiero** ('I want'), **quieres** ('you want') is the same lemma as **querer** ('want')
+
+### Morphemes
+- The small meaningful units that make up words
+- **Stems**: the core meaning-bearing units
+- **Affixes**: bits and pieces that adhere to stems
+  - Often with grammatical functions
+
+### Stemming
+- Reduce terms to their steams in information retrieval
+- *Stemming* is crude chopping of affixes
+  - language dependent
+  - e.g. **automate(s)**, **automatic**, **automation** all reduced to **automat**.
+
+### Porter's Algorithm
+The most common English stemmer. A series of search and replace rules to reduce words down to their stems.
+
+- Step 1A
+  - sses -> ss
+  - ies -> i
+  - ss -> ss
+  - s -> ø
+- Step 1B
+  - (\*v\*)ing -> ø
+  - (\*v\*)ed -> ø
+- Step 2 (for long stems)
+  - ational -> ate
+  - izer -> ize
+  - ator -> ate
+- ... even more complicated rules for very long stems
+
+### Using Unix tools to look at morphology in a corpus
+
+Code below does the usual stuff, and then we ```grep``` for all words ending in "ing".
+```
+tr -sc 'A-Za-z' '\n' < mlkdream.txt| tr 'A-Z' 'a-z' | grep 'ing$' | sort | uniq -c | sort -n -r > test.txt
+```
+
+```
+  12 ring
+   3 sweltering
+   3 sing
+   2 suffering
+   2 meaning
+   2 knowing
+   1 withering
+   1 tranquilizing
+   1 stating
+   1 something
+   1 signing
+   1 nothing
+   1 meeting
+   1 lodging
+   1 languishing
+   1 jangling
+   1 invigorating
+   1 honoring
+   1 heightening
+   1 having
+   1 gaining
+   1 dripping
+   1 drinking
+   1 cooling
+   1 beginning
+   1 awakening
+   1 asking
+```
+Nice, but there are some words here where we don't want to apply our stemming rule. Ring would just be r. Sing would just be s.
+
+Let's modify the grep rule to find all words ending in "ing" but that have a vowel beforehand, "has an earlier vowel".
+
+```
+tr -sc 'A-Za-z' '\n' < mlkdream.txt | tr 'A-Z' 'a-z' | grep '[aeiou].*ing$' | sort | uniq -c | sort -n -r > test2.txt
+```
+
+```
+   3 sweltering
+   2 suffering
+   2 meaning
+   2 knowing
+   1 withering
+   1 tranquilizing
+   1 stating
+   1 something
+   1 signing
+   1 nothing
+   1 meeting
+   1 lodging
+   1 languishing
+   1 jangling
+   1 invigorating
+   1 honoring
+   1 heightening
+   1 having
+   1 gaining
+   1 dripping
+   1 drinking
+   1 cooling
+   1 beginning
+   1 awakening
+   1 asking
+```
+
+Nothing is still an issue here, but this addition improved our rule overall.
