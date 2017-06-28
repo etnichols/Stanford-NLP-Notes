@@ -44,7 +44,7 @@ And what about...
 - Idioms
 - Entity Names
 
-# 2-1 Regular Expressions
+## 2-1 Regular Expressions
 "Formal language for specifying text strings"
 
 - Disjunctions [ ] Letters inside square brackets. ```[wW]oodchuck```
@@ -73,11 +73,11 @@ NLP constantly deals with these errors through 2 antagonistic efforts:
 1. Increase *accuracy* or *precision* by minimizing Type I errors
 2. Increase *coverage* or *recall* by minimizing Type II errors.
 
-# 2-2 RegEx in Practical NLP
+## 2-2 RegEx in Practical NLP
 Lexers == Tokenizers.
 Stanford English Tokenizer.
 
-# 2-3 Word Tokenization
+## 2-3 Word Tokenization
 How many words are in a text? Depends on how you define words. And when dealing with natural language:
 
 ```
@@ -244,3 +244,126 @@ tr -sc 'A-Za-z' '\n' < mlkdream.txt | tr 'A-Z' 'a-z' | grep '[aeiou].*ing$' | so
 ```
 
 Nothing is still an issue here, but this addition improved our rule overall.
+
+## 2-5 Sentence Segmentation
+How do we split up a sentence in a meaningful way?
+
+? and ! are relatively unambiguous.
+
+Periods, "." is quite ambiguous.
+  - Sentence boundary
+  - Abbreviations like Inc. or Dr.
+  - Numbers like .02% or 4.69
+
+How do we tackle the period problem? Build a **binary classifier** that decides whether a period is an End-of-Sentence (EOS) mark or not.
+
+How would we do this? Handwritten rules, RegEx, machine-learning classifiers.
+
+Simplest classifier: **Decision Tree**. A simple if-then procedure that branches based on answer.
+
+Determining if a word is EOS. We can consider the case of the word with the ".": Upper, Lower, Cap, Number. And consider the word after ".": Upper, Lower, Cap, Number. And then some numeric features:
+- Length of word with "."
+- Probability (word with "." occurs at EOS)
+- Probability (word after "." occurs at BOS)
+
+Is this the kind of word that tends to end an sentence? Is the word after the period one that tends to begin a sentence?
+
+#### Implementing Decision Trees
+- A decision tree is just an If-then-else statement
+- The interesting research is choosing the features
+- Setting up the structure is often too hard to do by hand
+
+## 3-1 Defining Minimum Edit Distance
+"How similar are two strings?"
+
+That is the question we look to answer with Minimum Edit Distance.
+
+**Minimum Edit Distance**: the minimum number of edits -- insertions, deletions, or substitutions -- needed to transform one string into the other.
+
+Basic implementation: all edit operations have cost 1.
+Levenshtein implementation: substitution edits have cost 2, others remain cost 1.
+
+Potential Applications:
+- Computation biology: aligning genome sequences
+- Machine translation: how good does our machine-translated sentence compare to a human expert's translation?
+- Named Entity Extraction and Entity Coreferncing: "Stanford President" and "Stanford University President" are the same thing
+
+We are searching for a path -- a sequence of edits -- that gets us from the initial string to the final string.
+
+1. Initial state: the word to be transformed
+2. Operations: insert, delete, substitute
+3. Goal state: the word we want to transform to
+4. Path cost: we want to minimize the # of edits
+
+Definition: String **X** with length **n**. String **Y** with length **m**. We define a matrix **D** with size **n X m**.
+- **D(i,j)**: edit distance between X\[1 ... i\] and Y\[1...j\] --> "the edit distance between the first **i** characters of string **X** and the first **j** characters of string **Y**."
+- **D(n,m)**: the edit distance between **X** and **Y**.
+
+## 3-2 Computing Minimum Edit Distance
+How do we compute the minimum edit distance? *Dynamic Programming!*
+
+```
+// initalization
+D(i,0) = i
+D(0,j) = j
+
+// recurrance relation
+for each i = 1 ... M
+  for each j = 1 ... N
+    D(i,j) = minimum of
+              D(i-1,j) + 1 (deletion)
+              D(i,j-1) + 1 (insertion)
+              D(i-1,j-1) +          2 if x(i) ≠ j(i)
+                                    0 if x(i) = j(i)
+
+// termination
+D(N,M) is a distance
+```
+
+## 3-3 Backtrace for Computing Alignments
+Backtracing is a way to keep track of *how* we reached out minimum edit distance: which operations did we take to reach this final state?
+
+To keep track, add an additional step to our DP algorithm to keep track which cell we came from to compute our current cell.
+
+```
+// initalization
+D(i,0) = i
+D(0,j) = j
+
+// recurrance relation
+for each i = 1 ... M
+  for each j = 1 ... N
+    D(i,j) = minimum of
+              D(i-1,j) + 1 (deletion)
+              D(i,j-1) + 1 (insertion)
+              D(i-1,j-1) +          2 if x(i) ≠ j(i)
+                                    0 if x(i) = j(i)
+
+// backtrace step
+ptr(i,j) = LEFT if insertion
+           DOWN if deletion
+           DIAG if substitution
+
+// termination
+D(N,M) is a distance
+```
+
+"An optimal alignment is composed of optimal subalignments."
+
+Performance:
+```
+time: O(nm)
+space: O(nm)
+backtrace: O(n+m)
+```
+
+## 3-4 Weighted Minimum Edit Distance
+Why would we want to weight the edit distance?
+
+- Spell correction: some letters are more commonly mistaken for others, e.g. e's are often incorrectly typed as a's.
+- Layout of the keyboard: physical layout means some errors are more common than others
+- Biology: some insertions/deletions are more likely than others for sciency reasons
+
+Edit the DP algorithm above to use operation-specific lookup tables instead of just +1 or +2 constant costs.
+
+## 3-5 Minimum Edit Distance in Computational Biology
