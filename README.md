@@ -367,3 +367,109 @@ Why would we want to weight the edit distance?
 Edit the DP algorithm above to use operation-specific lookup tables instead of just +1 or +2 constant costs.
 
 ## 3-5 Minimum Edit Distance in Computational Biology
+Sequence alignment of proteins, nucelotides, DNA sequences. Why?
+- to find important regions
+- determine function
+- uncover evolutionary forces
+- Assemble fragments to sequence DNA
+
+In NLP, we generally talk about **distance** (minimized)
+in Computational Biology, we generally talk about **similarity** (maximized)
+
+The **Needleman-Wunsch Algorithm** is a variant of the DP minimum edit distance algo above, specific for computational biology.
+
+Some variants of the basic algorithm:
+- Maybe it's OK to have an unlimited number of gaps in the beginning and end -- change the initalization values to 0 for everything.
+
+#### The Local Alignment Problem
+Given two strings:
+
+```
+x = x_1 ... x_m
+y = y_1 ... y_n
+```
+
+Find substrings **x'** and **y'** whose similarity (optimal global alignment value) is maximum.
+
+Example:
+
+```
+x = aaaacccccggggtta
+y = ttcccgggaaccaacc
+```
+aaaacc**cccggg**gtta
+tt**cccggg**aaccaacc
+
+This problem allows us to ignore non-alignments anywhere, not just beginning and end.
+
+## 4-1 Introduction to N-grams
+**Goal**: assign a probability to a sentence.
+
+Applications:
+- Machine translation: "high winds" > "large winds"
+- Spellcheck: "fifteen minutes away" > "15 minuets aways"
+- Speech recognition: "I saw a van" > "Eyes awe of an"
+
+P(W) = P(w<sub>1</sub>,w<sub>2</sub>,w<sub>3</sub>,w<sub>4</sub>,...,w<sub>n</sub>)
+
+It's also handy to compute the probability of an upcoming word, based on words already seen:
+
+P(w<sub>5</sub>|w<sub>1</sub>,w<sub>2</sub>,w<sub>3</sub>,w<sub>4</sub>)
+
+A model that computes either P(W) or conditional probability of an upcoming word is called a **Language Model**, or **LM** for short.
+
+### Conditional Probability Review
+P(A|B) = P(A,B) / P(B)
+P(A|B)*P(B) = P(A,B)
+**P(A,B) = P(A|B)*P(B)**
+
+If we add more variables...
+**P(A,B,C,D) = P(A)*P(A|B)*P(C|A,B)*P(D|A,B,C)**
+
+This generalizes to the [Chain rule](https://en.wikipedia.org/wiki/Chain_rule_(probability))
+
+Applying the chain rule to compute the joint probability of words in a sentence:
+
+P(w<sub>1</sub>,w<sub>2</sub>,w<sub>3</sub>,w<sub>4</sub>...w<sub>n</sub>) = π<sub></sub>i P(w<sub>i</sub>|w<sub>1</sub>,w<sub>2</sub>,...w<sub>i-1</sub>)
+
+Example:
+
+```P(the | its water is so transparent that) = count(its water is so transparent that the) / count(its water is so transparent that)```
+
+**This won't work!** There are too many possible sentences in the world to ever get full counts
+
+### Markov Assumption
+A simplifying assumption: look at only one or a few previous words to compute each upcoming component, not the entire sentence.
+
+P(w<sub>1</sub>,w<sub>2</sub>,w<sub>3</sub>,w<sub>4</sub>...w<sub>n</sub>) = π<sub></sub>i P(w<sub>i</sub>|w<sub>i-k</sub>,...,w<sub>i-1</sub>)
+
+With k representing some prefix of a last few words.
+
+The simpliest case is the **Unigram model**: Probability of a sentence is just a chain rule of the probabilities of the individual words themselves. I.e. how many times does this word occur in comparison to all words. No lookback.
+
+**Bigram model**: consider only one word before the upcoming
+**Trigram model**: consider only two word before the upcoming
+...
+**N-gram model**: consider only n words before the upcoming
+
+Even then... this can be an insufficient model of language. Why? Language has **long distance dependencies.** Example:
+
+```
+"The computer which I had just put into that machine room on the fifth floor crashed."
+```
+
+The word "floor" is not going to be a really strong predictor of "crashed." But, the subject of the sentence, "computer", is an excellent predictor. But very far away.
+
+Summary: Language Models seek to assign probabilities to sentences. N-gram models provide us a good initial approach for calculating these probabilities.
+
+## 4-2 Estimating N-gram Probabilities
+
+Esimating bigram probabilities is straightforward.
+
+P(wi | wi-1) = c(wi-1, wi) / c(wi-1)
+
+"Of all the times word i-1 occurred, how many times was it followed by word i?
+
+This is the **maximum likelihood estimator.**
+
+![raw bigram probs](img/rawbigram.png)
