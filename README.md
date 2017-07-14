@@ -473,3 +473,93 @@ P(wi | wi-1) = c(wi-1, wi) / c(wi-1)
 This is the **maximum likelihood estimator.**
 
 ![raw bigram probs](img/rawbigram.png)
+
+### Practical issues
+- We do everything in log space.
+  - Avoid underflow: multiplying a bunch of very small numbers (like in the chain rule) will produce an even smaller number, risk of underflow/loss of accuracy.
+  - Also adding is faster computationally than multiplying
+
+p<sub>1</sub> * p<sub>2</sub> * p<sub>3</sub> * p<sub>4</sub> = log(p<sub>1</sub>) * log(p<sub>2</sub>) * log(p<sub>3</sub>) * log(p<sub>4</sub>)
+
+### Language Modeling Toolkin
+
+[SRILM](http://www.speech.sri.com/projects/srilm/)
+[Google N-Gram Release](https://books.google.com/ngrams)
+
+## 4-3 Evaluation and Perplexity
+Evaluation is important -- it allows us to compare the performance of different LMs. Does my LM prefer good sentences to bad ones? "Real" or "frequently observed" sentences should get higher probabilities than bad ones.
+
+**Training data** is used to tune LM parameters. An **unseen test set** is used to evaluate it.
+
+- Extrinsic evaluation (in-vivo): Comparing two LMs, A and B, by putting each model in a task (spellcheck, speech recognition, MT). Run the tests, determine model accuracy, compare. We're using something *external* to the n-gram model itself as a way to evaluate. Cons: time-consuming to perform evaluations.
+- Intrinsic evaluation (perplexity): the probability of the test set, normalized by the number of words.
+  - Perplexity is usually a bad appx. of external eval. So generally only useful for pilot experiments.
+
+### The Shannon Game
+How well can we predict the next word in a sentence? Unigrams are terrible at this game... why would that be?
+
+- I always order pizza with cheese and ______
+- The 33rd president of the US was ______
+- I saw a ______
+
+### Defining Perplexity
+
+PP(W) = P(w<sub>1</sub>,w<sub>2</sub>,w<sub>3</sub>,w<sub>4</sub>...w<sub>n</sub>)<sup>-1/N</sup>
+
+![Perplexity Equ](img/perplex.png)
+
+The longer the sentence, the less probable it's going to be, so this allows us to normalize and compare test sets of different lengths.
+
+**Minimizing perplexity is the same as maximizing probability.**
+
+### The Shannon Game intuition for perplexity
+
+Another way to get an intuition for perplexity: it is the **weighted equivalent branching factor.** "On average, how many things could happen next?"
+
+How hard is the task of recoginizing digits 0-9? **Perplexity = 10**
+
+## 4-4 Generalization and Zeroes
+A lot of language models are counts for bigrams and trigrams. We saw alot of those counts include 0 counts, ie phrases never seen. What do we do with those?
+
+### The Shannon Visualization Method
+A method for visualizing a LM model.
+
+- Choose a random bigram
+  - (<s>, w) according to its probability
+- Now choose random bigram (w,x) according to its probability
+- ...And so on until we choose </s>
+- Then string the words together
+
+```
+<s> I
+    I want
+      want to
+           to eat
+              eat Chinese
+                  Chinese food
+                          food </s>
+    I want to eat Chinese food
+```
+
+Consider Shakespeare as a corpus.
+
+N = 884,647 tokens
+V = 29,066 unique words
+300,000 unique word pairing, ie "bigram types"
+
+Out of V<sup>2</sup> = 844 million possible bigrams. I.e. **99.96%** of the possible bigrams were never seen (have zero entries in the table).
+
+You can imagine that quadrigrams are much worse: What's coming out looks like Shakespeare because it **is** Shakespeare.
+
+### The Perils of Overfitting
+N-grams only work well for word prediction if the test set matches the training set. "If you train on Shakespeare and test on the WSJ, you're going to do a bad job predicting."
+
+![Zeros in training set example](img/zeros.png)
+
+We are going to need a way to deal with zero probabilities in our n-grams.
+
+## 4-5 Smoothing: Add One (Laplace) smoothing
+
+## 4-6 Interpolation
+
+## 4-7 Good Turing Smoothing - Advanced Techniques
