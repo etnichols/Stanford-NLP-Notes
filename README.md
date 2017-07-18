@@ -560,6 +560,89 @@ We are going to need a way to deal with zero probabilities in our n-grams.
 
 ## 4-5 Smoothing: Add One (Laplace) smoothing
 
+Basic intuition of smoothing: "steal" some probability mass and use it for things we haven't seen, to generalize our models better.
+
+![Basic Intuition for Smoothing](img/smoothing.png)
+
+Add-one (Laplace) smoothing is the most basic approach to this: "pretend we saw each word one more time than we actually did."
+
+P<sub>MLE</sub> (w<sub>i</sub> | w<sub>i-1</sub>) = c(w<sub>i-1</sub>, w<sub>i</sub>) / c(w<sub>i-1</sub>)
+
+The MLE probability is simply the count of all the times the combo wi-1 wi happened, divided by total count of wi-1.
+
+P<sub>Add-1</sub> (w<sub>i</sub> | w<sub>i-1</sub>) = c(w<sub>i-1</sub>, w<sub>i</sub>) + 1 / c(w<sub>i-1</sub>) + V
+
+We add V to the denominator because for each and every word that follows wi-1, we are adding one, and there are V total words that could follow.
+
+MLE refresher: the Maximum Likelihood Estimate of some parameter of a model M from a training set T maximizes the likelihood of T given M.
+
+Suppose: we see "bagel" 400 times in a corpus of 1,000,000 words. What is the P("bagel") in some other text?
+
+```
+MLE Estimate: 400/1000000 = .0004
+```
+
+This could be a bad estimate for some other corpus, but it is the estimate that makes it **most likely**
+that "bagel" will occur 400 times out of a 1m word corpus.
+
+Therefore, any smoothing estimate is a **non-MLE** because we are changing the counts from what they occurred in our training data in hopes of generalizing better.
+
+We can take those probabilities and reconstitute the counts as if we had seen things the number of times necessary to get those add-1 probabilities naturally. What do those new counts look like, how have they changed our probabilities?
+
+![Reconstituted Counts Formula](img/reconst.png)
+
+Note: these add one smoothing estimates can cause massive changes to our raw bigram counts. It makes very big changes in the counts in order to "steal" the right amount of mass to use across all those zeros.
+
+Add-1 can be used in text classification and places where the number of zeros isn't so massive.
+
 ## 4-6 Interpolation
+Sometimes it is helpful to use less context as opposed to more. We can condition on less context for contexts you haven't learned much about.
+
+**Backoff**: use trigram if you have good evidence, otherwise bigram, otherwise unigram.
+**Interpolation**: mix unigram, bigram and trigram.
+
+Interpolation tends to work better than backoff.
+
+![Types of Linear interpolation](img/interp.png)
+
+How do we set the lambdas? Use a **held-out** corpus.
+
+```
+|             Training Data                 |    Held-Out Data    |     Test Data     |
+```
+
+Choose lambdas to maximize the probability of the held-out data.
+- Fix the n-gram probabilities on the training set
+- Then search for lambdas that give the largest probability to held-out set.
+
+### Unknown Words: Open versus Closed vocabulary tasks
+- If we know all the words in advanced
+  - Vocabulary V is fixed
+  - **Closed vocabulary task**
+- Often we don't know this
+  - Out of Vocabulary = OOV words
+  - **Open vocabulary task**
+
+How to deal with unknown words? <UNK> token.
+- Create a fixed lexicon L of size V
+- At text normalization phase, any training word not in L changed to <UNK>
+- Now we train its probabilities like a normal word
+
+At decoding time, if it is text input, use UNK probabilities for any word not in training.
+
+### Web-scale n-grams
+Pruning: only store N-grams with count > threshold, or entropy-based pruning
+Efficiency: use efficient data structures like tries, bloom filters: appx language models, store words as indexes, not strings, use Huffman coding, etc.
+
+![Stupid Backoff equation](img/backoff.png)
+
+[Stupid Backoff Paper](http://www.aclweb.org/anthology/D07-1090.pdf)
+
+Stupid backoff doesn't produce probabilities. It produces "scores."
+
+### Advanced Language Modeling
+Discriminative models: choose n-gram weights to improve a task, not fit the training set
+Parsing-based models
+Caching models: recently used words are more likely to appear. But cache models perform poorly for speech recognition. Why is this so?
 
 ## 4-7 Good Turing Smoothing - Advanced Techniques
